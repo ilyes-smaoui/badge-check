@@ -2,8 +2,12 @@
 
 # import numpy as np
 import cv2
+import sys
 
-badge_filename = "res/img/badge.png"
+if len(sys.argv) >= 2 :
+	badge_filename = sys.argv[1]
+else :
+	badge_filename = "res/img/badge.png"
 
 def check_inside_cirle (img) :
 	'''
@@ -29,16 +33,19 @@ def check_badge(img) :
 	that it's in a circle format
 	'''
 	badge_size = 512
-	err_msg_size = "Error : Image size isn't " + str(badge_size) + "x" + str(badge_size) + " !"
+	err_msg_size = "Error : Image size isn't " + str(badge_size) + "x" + str(badge_size) + ", or has no alpha channel !"
 	min_happy_score = 0.5
 	happy_color_profile = [[40, 150, 180]]
 	# Check image size
-	assert img.shape[2] == 4, img.shape[2]
-	assert img.shape[0] == img.shape[1] == badge_size, err_msg_size
+	if img.shape[2] != 4 or not(img.shape[0] == img.shape[1] == badge_size) :
+		return (False, err_msg_size)
 	# Check round shape
-	assert check_inside_cirle(img), "Error : there are non-transparent pixels outside of the badge circle !"
+	if not check_inside_cirle(img) :
+		return (False, "Error : there are non-transparent pixels outside of the badge circle !")
 	# Check colors
-	assert rate_color_profile(img, 1) > min_happy_score, "Error : color profile not \"happy\" enough, sorry !"
+	if not rate_color_profile(img, 1) > min_happy_score :
+		return (False, "Error : color profile not \"happy\" enough, sorry !")
+	return (True, "All good !")
 
 
 # cv2.IMREAD_UNCHANGED flag necessary to include alpha channel of PNG file
