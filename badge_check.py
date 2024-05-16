@@ -7,6 +7,10 @@ import math as m
 
 if len(sys.argv) >= 2 :
 	badge_filename = sys.argv[1]
+	if len(sys.argv) >= 3 :
+		min_color_score = float(sys.argv[2])
+	else :
+		min_color_score = 0.6
 else :
 	badge_filename = "res/img/badge.png"
 
@@ -22,7 +26,7 @@ def check_inside_cirle (img, img_size = 512) :
 	center = (img_size - 1)/2
 	for i in range(img.shape[0]) :
 		for j in range(img.shape[1]) :
-			if ((i-center)**2 + (j-center)**2 > (img_size/2)**2) :
+			if ((i-center)**2 + (j-center)**2 > ((img_size + 2)/2)**2) : # the "+ 2" is just so that there is a small margin for error
 				if img[i][j][3] != 0 :
 					return False
 	return True
@@ -82,10 +86,10 @@ def rate_color_profile (img, goal_profile, img_size = 512, efficiency = 0) :
 		samples_taken += 1
 	mean_dist /= samples_taken
 	res = 1 - (mean_dist/max_dist)
-	print(res) # [debugging]
+	# print(res) # [debugging]
 	return res
 
-def check_badge(img, badge_size = 512, min_profile_score = 0.5, color_profile = happy_color_profile) :
+def check_badge(img, badge_size = 512, min_profile_score = 0.6, color_profile = happy_color_profile) :
 	'''
 	Takes an array representing the badge image as input, checks that it's the right size,
 	that it's in a circle format
@@ -95,10 +99,12 @@ def check_badge(img, badge_size = 512, min_profile_score = 0.5, color_profile = 
 	if img.shape[2] != 4 or not(img.shape[0] == img.shape[1] == badge_size) :
 		return (False, err_msg_size)
 	# Check round shape
-	# if not check_inside_cirle(img) :
-	# 	return (False, "Error : there are non-transparent pixels outside of the badge circle !")
+	if not check_inside_cirle(img) :
+		return (False, "Error : there are non-transparent pixels outside of the badge circle !")
 	# Check colors
-	if (rate_color_profile(img, happy_color_profile, efficiency = 1) < min_profile_score) :
+	color_score = rate_color_profile(img, happy_color_profile, efficiency = 1)
+	print("Color score : " + str(color_score))
+	if (color_score < min_profile_score) :
 		return (False, "Error : color profile not \"happy\" enough, sorry !")
 	return (True, "All good !")
 
@@ -108,7 +114,7 @@ le_img = cv2.imread(badge_filename, cv2.IMREAD_UNCHANGED)
 # print(le_img.shape) # [debugging]
 # cv2.imshow("Image", le_img) # [debugging]
 # key = cv2.waitKey(0) # [debugging]
-badge_valid, msg = check_badge(le_img)
+badge_valid, msg = check_badge(le_img, min_profile_score = min_color_score)
 if badge_valid :
 	print(msg)
 else :
